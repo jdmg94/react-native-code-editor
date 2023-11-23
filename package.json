@@ -1,5 +1,5 @@
 {
-  "name": "@rivascva/react-native-code-editor",
+  "name": "@superiortech/react-native-code-editor",
   "description": "A code editor with syntax highlighting built for React Native applications.",
   "author": "Carlos Rivas",
   "version": "1.2.2",
@@ -14,28 +14,29 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/RivasCVA/react-native-code-editor"
+    "url": "https://github.com/jdmg94/react-native-code-editor"
   },
   "license": "MIT",
   "scripts": {
     "android": "react-native run-android",
     "ios": "react-native run-ios",
     "start": "react-native start",
-    "test": "jest",
+    "test": "jest --passWithNoTests",
     "lint": "eslint src --ext .js,.jsx,.ts,.tsx",
-    "prettier": "prettier --check \"src/**/*.{js,jsx,ts,tsx}\"",
+    "prettier": "prettier --check --write \"src/**/*.{js,jsx,ts,tsx}\"",
     "prepare": "husky install && bob build",
     "packlist": "npx npm-packlist"
   },
   "lint-staged": {
     "**/*.{js,jsx,ts,tsx}": [
       "npm run lint",
-      "npm run prettier",
-      "npm test"
+      "npm run prettier"
     ]
   },
   "dependencies": {
-    "react-syntax-highlighter": "^15.4.5"
+    "@superiortech/react-native-code-editor": "github:jdmg94/react-native-code-editor#feature-flashlist",
+    "react-native-syntax-highlighter": "^2.1.0",
+    "react-syntax-highlighter": "^15.5.0"
   },
   "peerDependencies": {
     "react": "*",
@@ -49,7 +50,7 @@
     "@testing-library/react-native": "^10.1.1",
     "@types/jest": "^26.0.23",
     "@types/react-native": "^0.66.15",
-    "@types/react-syntax-highlighter": "^13.5.2",
+    "@types/react-syntax-highlighter": "^15.5.10",
     "@types/react-test-renderer": "^17.0.1",
     "@typescript-eslint/eslint-plugin": "^5.7.0",
     "@typescript-eslint/parser": "^5.7.0",

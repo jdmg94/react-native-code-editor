@@ -6,7 +6,7 @@ import * as Indentation from './indentation';
  * @returns string
  */
 export const convertTabsToSpaces = (str: string): string => {
-    return str.replace(/\t/g, Indentation.createIndentString());
+  return str.replace(/\t/g, Indentation.createIndentString());
 };
 
 /**
@@ -17,5 +17,5 @@ export const convertTabsToSpaces = (str: string): string => {
  * @returns string
  */
 export const insertStringAt = (str: string, position: number, strToInsert: string): string => {
-    return str.substring(0, position + 1) + strToInsert + str.substring(position + 1);
+  return str.substring(0, position + 1) + strToInsert + str.substring(position + 1);
 };

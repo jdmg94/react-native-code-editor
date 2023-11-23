@@ -91,7 +91,7 @@ Checkout [`useBottomTabBarHeight`](https://reactnavigation.org/docs/bottom-tab-n
 | `style?` | Editor styles. More details [below](https://github.com/RivasCVA/react-native-code-editor#styles). |
 | `language` | Programming language to support. View all [here](https://github.com/react-syntax-highlighter/react-syntax-highlighter/blob/master/AVAILABLE_LANGUAGES_HLJS.MD). |
 | `syntaxStyle?` | Syntax highlighting style. View all [here](https://github.com/react-syntax-highlighter/react-syntax-highlighter/blob/master/AVAILABLE_STYLES_HLJS.MD). |
-| `initialValue?` | Initial value on render. |
+| `value?` | text to render |
 | `onChange?` | On value change. |
 | `onKeyPress?` | On key press. |
 | `showLineNumbers?` | Whether to show line numbers next to each line. |

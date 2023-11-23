@@ -9,18 +9,17 @@ export const INDENT_SYMBOL = ' '; // Spaces over tabs
  * @returns number.
  */
 export const getIndentSize = (line: string): number => {
-    for (let i = 0; i < line.length; i++) {
-        if (line[i] !== INDENT_SYMBOL) {
-            const trimmed = line.trimEnd();
-            const lastChar = trimmed.substring(trimmed.length - 1);
-            // Extra indentation if inside a regular brace.
-            // Inclues colon for python.
-            const addedIndent =
-                Braces.isOpenBrace(lastChar, true) || lastChar === ':' ? INDENT_SIZE : 0;
-            return i + addedIndent;
-        }
+  for (let i = 0; i < line.length; i++) {
+    if (line[i] !== INDENT_SYMBOL) {
+      const trimmed = line.trimEnd();
+      const lastChar = trimmed.substring(trimmed.length - 1);
+      // Extra indentation if inside a regular brace.
+      // Inclues colon for python.
+      const addedIndent = Braces.isOpenBrace(lastChar, true) || lastChar === ':' ? INDENT_SIZE : 0;
+      return i + addedIndent;
     }
-    return 0;
+  }
+  return 0;
 };
 
 /**
@@ -30,12 +29,12 @@ export const getIndentSize = (line: string): number => {
  * @returns number
  */
 export const getSuggestedIndentSize = (lines: string[]): number => {
-    for (let i = lines.length - 1; i >= 0; i--) {
-        if (lines[i].trim().length > 0) {
-            return getIndentSize(lines[i]);
-        }
+  for (let i = lines.length - 1; i >= 0; i--) {
+    if (lines[i].trim().length > 0) {
+      return getIndentSize(lines[i]);
     }
-    return 0;
+  }
+  return 0;
 };
 
 /**
@@ -45,9 +44,9 @@ export const getSuggestedIndentSize = (lines: string[]): number => {
  * @returns string
  */
 export const createIndentString = (indentSize: number = INDENT_SIZE): string => {
-    let str = '';
-    for (let i = 0; i < indentSize; i++) {
-        str += INDENT_SYMBOL;
-    }
-    return str;
+  let str = '';
+  for (let i = 0; i < indentSize; i++) {
+    str += INDENT_SYMBOL;
+  }
+  return str;
 };
