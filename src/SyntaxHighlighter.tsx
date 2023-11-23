@@ -164,6 +164,7 @@ const SyntaxHighlighter = (props: PropsWithForwardRef): JSX.Element => {
             if (node.children) {
                 const textElement = (
                     <Text
+                        numberOfLines={1}
                         key={`${key}.${index}`}
                         style={[
                             {
