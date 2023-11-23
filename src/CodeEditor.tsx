@@ -124,7 +124,7 @@ const CodeEditor = (props: PropsWithForwardRef): JSX.Element => {
         style,
         language,
         syntaxStyle = CodeEditorSyntaxStyles.atomOneDark,
-        initialValue = '',
+        value: initialValue = '',
         onChange,
         onKeyPress,
         showLineNumbers = false,
@@ -166,6 +166,10 @@ const CodeEditor = (props: PropsWithForwardRef): JSX.Element => {
             onChange(value);
         }
     }, [onChange, value]);
+
+    useEffect(() => {
+        setValue(initialValue);
+    }, [initialValue]);
 
     // Negative values move the cursor to the left
     const moveCursor = (current: number, amount: number) => {
