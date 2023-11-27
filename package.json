@@ -34,7 +34,6 @@
     ]
   },
   "dependencies": {
-    "@superiortech/react-native-code-editor": "github:jdmg94/react-native-code-editor#feature-flashlist",
     "react-native-syntax-highlighter": "^2.1.0",
     "react-syntax-highlighter": "^15.5.0"
   },

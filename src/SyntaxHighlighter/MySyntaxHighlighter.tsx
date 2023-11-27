@@ -1,4 +1,4 @@
-import React, { useCallback, memo, CSSProperties } from 'react';
+import React, { useCallback } from 'react';
 // @ts-ignore
 import * as HLJSSyntaxStyles from 'react-syntax-highlighter/dist/esm/styles/hljs';
 import { FlatList, View, Text, Platform, ColorValue, TextStyle } from 'react-native';
@@ -13,13 +13,22 @@ export type Node = {
 };
 
 type StyleSheet = {
-  [key: string]: CSSProperties;
+  [key: string]: TextStyle & {
+    background?: string;
+  };
 };
 
 type RendererParams = {
   rows: Node[];
   stylesheet: StyleSheet;
   useInlineStyles?: boolean;
+};
+
+type TextNodeProps = {
+  node: Node;
+  index: number;
+  totalItems?: number;
+  id: string | number;
 };
 
 export type SyntaxHighlighterStyleType = {
@@ -100,6 +109,62 @@ export type SyntaxHighlighterProps = HighlighterProps & {
   testID?: string;
 };
 
+type TextPortionDeps = {
+  highlighterColor: string;
+  syntaxStylesheet: typeof SyntaxHighlighterSyntaxStyles;
+  fontSize: number;
+  fontFamily: string;
+  inputLineHeight: number;
+};
+
+const TextPortion =
+  ({
+    highlighterColor,
+    syntaxStylesheet,
+    fontSize,
+    fontFamily,
+    inputLineHeight,
+  }: TextPortionDeps) =>
+  ({ node, id, index }: TextNodeProps) => {
+    if (node.type === 'text') {
+      return <Text>{node.value}</Text>;
+    }
+
+    const key = `${id}.${index}`;
+    const Segment = TextPortion({
+      highlighterColor,
+      syntaxStylesheet,
+      fontSize,
+      fontFamily,
+      inputLineHeight,
+    });
+    return (
+      <Text
+        textBreakStrategy="highQuality"
+        style={[
+          {
+            color: highlighterColor || syntaxStylesheet.hljs?.color,
+          },
+          ...(node.properties?.className || []).map((c) => syntaxStylesheet[c]),
+          {
+            fontFamily,
+            fontSize,
+            lineHeight: inputLineHeight,
+          },
+        ]}
+      >
+        {node.children?.map((segment, idx) => (
+          <Segment
+            key={`${key}.${idx}`}
+            index={idx}
+            node={segment}
+            id={`${key}.${node.tagName}}`}
+          />
+        ))}
+      </Text>
+    );
+  };
+
 type PropsWithForwardRef = SyntaxHighlighterProps & {
   forwardedRef: React.Ref<FlatList<Node>>;
 };
@@ -148,51 +213,17 @@ const SyntaxHighlighter = (props: PropsWithForwardRef): JSX.Element => {
       cleanStyle(style),
     ])
   );
-
-  type TextNodeProps = {
-    node: Node;
-    index: number;
-    totalItems?: number;
-    id: string | number;
-  };
-
   const nativeRenderer = useCallback(
-    ({ rows }: RendererParams) => {
-      const TextPortion = ({ node, id, index }: TextNodeProps) => {
-        if (node.type === 'text') {
-          return <Text>{node.value}</Text>;
-        }
-
-        const key = `${id}.${index}`;
-
-        return (
-          <Text
-            textBreakStrategy="highQuality"
-            style={[
-              {
-                color: highlighterColor || syntaxStylesheet.hljs?.color,
-              },
-              ...(node.properties?.className || []).map((c) => syntaxStylesheet[c]),
-              {
-                fontFamily,
-                fontSize,
-                lineHeight: inputLineHeight,
-              },
-            ]}
-          >
-            {node.children?.map((segment, idx) => (
-              <TextPortion
-                key={`${key}.${idx}`}
-                index={idx}
-                node={segment}
-                id={`${key}.${node.tagName}}`}
-              />
-            ))}
-          </Text>
-        );
-      };
-      const TextNode = memo(
-        ({ index, node, totalItems, id }: TextNodeProps) => {
+    () =>
+      ({ rows }: RendererParams) => {
+        const TextNode = ({ index, node, totalItems, id }: TextNodeProps) => {
+          const Segment = TextPortion({
+            fontFamily,
+            fontSize,
+            highlighterColor: highlighterColor as string,
+            inputLineHeight,
+            syntaxStylesheet,
+          });
           return (
             <View
               style={{
@@ -217,52 +248,46 @@ const SyntaxHighlighter = (props: PropsWithForwardRef): JSX.Element => {
                   {index}
                 </Text>
               )}
-              <TextPortion id={id} node={node} index={index} totalItems={totalItems} />
+              <Segment id={id} node={node} index={index} totalItems={totalItems} />
             </View>
           );
-        },
-        (prevState, nextState) =>
-          prevState.node.value !== nextState.node.value ||
-          prevState.node.type !== nextState.node.type ||
-          // @ts-ignore
-          prevState.children?.length !== nextState.children?.length
-      );
+        };
 
-      return (
-        <FlatList<Node>
-          data={rows}
-          windowSize={40}
-          ref={forwardedRef}
-          initialScrollIndex={0}
-          initialNumToRender={30}
-          scrollEnabled={scrollEnabled}
-          testID={`${testID}-scroll-view`}
-          contentContainerStyle={[
-            syntaxStylesheet.hljs,
-            {
+        return (
+          <FlatList<Node>
+            data={rows}
+            windowSize={40}
+            ref={forwardedRef}
+            initialScrollIndex={0}
+            initialNumToRender={30}
+            scrollEnabled={scrollEnabled}
+            testID={`${testID}-scroll-view`}
+            contentContainerStyle={[
+              syntaxStylesheet.hljs,
+              {
+                padding: 0,
+                paddingTop: 6.5,
+                paddingBottom: padding,
+              },
+            ]}
+            style={{
+              margin: 0,
               padding: 0,
-              paddingTop: 6.5,
-              paddingBottom: padding,
-            },
-          ]}
-          style={{
-            margin: 0,
-            padding: 0,
-            width: '100%',
-            height: '100%',
-            backgroundColor: backgroundColor || syntaxStylesheet.hljs?.background,
-          }}
-          renderItem={({ item, index }) => (
-            <TextNode
-              node={item}
-              index={index}
-              id={`code-line-${index}`}
-              totalItems={rows.length}
-            />
-          )}
-        />
-      );
-    },
+              width: '100%',
+              height: '100%',
+              backgroundColor: backgroundColor || syntaxStylesheet.hljs?.background,
+            }}
+            renderItem={({ item, index }) => (
+              <TextNode
+                node={item}
+                index={index}
+                id={`code-line-${index}`}
+                totalItems={rows.length}
+              />
+            )}
+          />
+        );
+      },
     [
       backgroundColor,
       forwardedRef,
@@ -291,7 +316,7 @@ const SyntaxHighlighter = (props: PropsWithForwardRef): JSX.Element => {
       useInlineStyles
       CodeTag={View}
       PreTag={View}
-      renderer={nativeRenderer}
+      renderer={nativeRenderer()}
       testID={testID}
       style={syntaxStylesheet}
     />

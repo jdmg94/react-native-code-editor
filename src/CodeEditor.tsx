@@ -1,30 +1,31 @@
-import React, { useEffect, useImperativeHandle, useRef } from 'react';
-import * as HLJSSyntaxStyles from 'react-syntax-highlighter/dist/esm/styles/hljs';
+import React, { useEffect, useImperativeHandle, useRef, useState } from 'react';
 import {
   View,
+  // FlatList,
+  TextStyle,
   TextInput,
   StyleSheet,
   Platform,
   ColorValue,
-  FlatList,
   NativeSyntheticEvent,
   TextInputScrollEventData,
   TextInputKeyPressEventData,
   TextInputSelectionChangeEventData,
+  ScrollView,
 } from 'react-native';
-import {
-  Node,
-  SyntaxHighlighterStyleType,
+import SyntaxHighlighter, {
+  // Node,
+  // SyntaxHighlighterStyleType,
   SyntaxHighlighterSyntaxStyles,
 } from './SyntaxHighlighter';
 
-import SyntaxHighlighter from './NativeSyntaxHighlighter';
+// import SyntaxHighlighter, { Node } from './NativeSyntaxHighlighter';
 import { Languages } from './languages';
 import * as Braces from './braces';
 // import * as Indentation from './indentation';
 import * as Strings from './strings';
 
-export type CodeEditorStyleType = SyntaxHighlighterStyleType & {
+export type CodeEditorStyleType = TextStyle & {
   /**
    * Editor height.
    */
@@ -59,7 +60,7 @@ export type CodeEditorStyleType = SyntaxHighlighterStyleType & {
   inputColor?: ColorValue;
 };
 
-export type SyntaxStyles = typeof HLJSSyntaxStyles;
+export type SyntaxStyles = typeof SyntaxHighlighterSyntaxStyles;
 export const CodeEditorSyntaxStyles: SyntaxStyles = SyntaxHighlighterSyntaxStyles;
 
 type Props = {
@@ -128,7 +129,7 @@ const CodeEditor = (props: PropsWithForwardRef): JSX.Element => {
   const {
     style,
     language,
-    // syntaxStyle = CodeEditorSyntaxStyles.idea,
+    syntaxStyle = CodeEditorSyntaxStyles.idea,
     value: initialValue = '',
     onChange,
     onKeyPress,
@@ -154,18 +155,18 @@ const CodeEditor = (props: PropsWithForwardRef): JSX.Element => {
     fontSize = 16,
   } = addedStyle;
 
-  // const [value, setValue] = useState<string>(initialValue);
-  const value = useRef(initialValue);
-  const highlighterRef = useRef<FlatList<Node>>(null);
+  const [value, setValue] = useState<string>(initialValue);
+  // const highlighterRef = useRef<FlatList<Node>>(null);
+  const highlighterRef = useRef<ScrollView>(null);
   const inputRef = useRef<TextInput>(null);
   const inputSelection = useRef<TextInputSelectionType>({ start: 0, end: 0 });
 
   useEffect(() => {
-    onChange?.(value.current);
+    onChange?.(value);
   }, [onChange, value]);
 
   useEffect(() => {
-    value.current = initialValue;
+    setValue(initialValue);
   }, [initialValue]);
 
   // Only when line numbers are showing
@@ -216,13 +217,14 @@ const CodeEditor = (props: PropsWithForwardRef): JSX.Element => {
   };
 
   const handleChangeText = (text: string) => {
-    value.current = Strings.convertTabsToSpaces(text);
+    setValue(Strings.convertTabsToSpaces(text));
   };
 
   const handleScroll = (e: NativeSyntheticEvent<TextInputScrollEventData>) => {
     // Match text input scroll with syntax highlighter scroll
     const y = e.nativeEvent.contentOffset.y;
-    highlighterRef.current?.scrollToOffset({ offset: y, animated: false });
+    // highlighterRef.current?.scrollToOffset({ offset: y, animated: false });
+    highlighterRef.current?.scrollTo({ y, animated: false });
   };
 
   const handleKeyPress = (e: NativeSyntheticEvent<TextInputKeyPressEventData>) => {
@@ -236,7 +238,7 @@ const CodeEditor = (props: PropsWithForwardRef): JSX.Element => {
       default:
         if (Braces.isOpenBrace(key)) {
           setTimeout(() => {
-            value.current = addClosingBrace(value.current, key);
+            setValue((prev) => addClosingBrace(prev, key));
           }, 10);
         }
         break;
@@ -257,14 +259,14 @@ const CodeEditor = (props: PropsWithForwardRef): JSX.Element => {
         language={language}
         fontSize={fontSize}
         fontFamily={fontFamily}
-        // addedStyle={addedStyle}
-        // syntaxStyle={syntaxStyle}
-        // scrollEnabled={false}
-        // showLineNumbers={showLineNumbers}
-        // testID={`${testID}-syntax-highlighter`}
-        // ref={highlighterRef}
+        addedStyle={addedStyle}
+        syntaxStyle={syntaxStyle}
+        scrollEnabled={false}
+        showLineNumbers={showLineNumbers}
+        testID={`${testID}-syntax-highlighter`}
+        ref={highlighterRef}
       >
-        {value.current}
+        {value}
       </SyntaxHighlighter>
       <TextInput
         style={[
@@ -278,7 +280,7 @@ const CodeEditor = (props: PropsWithForwardRef): JSX.Element => {
             overflow: 'hidden',
           },
         ]}
-        value={value.current}
+        value={value}
         spellCheck={false}
         onChangeText={handleChangeText}
         onScroll={handleScroll}
