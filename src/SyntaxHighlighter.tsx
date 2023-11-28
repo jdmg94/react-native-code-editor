@@ -1,28 +1,21 @@
-import React from 'react';
+import React, { CSSProperties } from 'react';
 import { View, ScrollView, Text, Platform, ColorValue, TextStyle } from 'react-native';
 import Highlighter, { SyntaxHighlighterProps as HighlighterProps } from 'react-syntax-highlighter';
+// @ts-ignore
 import * as HLJSSyntaxStyles from 'react-syntax-highlighter/dist/esm/styles/hljs';
 
-type Node = {
+export interface Node {
+    type: 'element' | 'text';
+    value?: string | number | undefined;
+    tagName?: keyof JSX.IntrinsicElements | React.ComponentType<any> | undefined;
+    properties?: { className: any[]; [key: string]: any };
     children?: Node[];
-    properties?: {
-        className: string[];
-    };
-    tagName?: string;
-    type: string;
-    value?: string;
-};
-
-type StyleSheet = {
-    [key: string]: TextStyle & {
-        background?: string;
-    };
-};
-
-type RendererParams = {
+}
+export interface rendererProps {
     rows: Node[];
-    stylesheet: StyleSheet;
-};
+    stylesheet: { [key: string]: React.CSSProperties };
+    useInlineStyles: boolean;
+}
 
 export type SyntaxHighlighterStyleType = {
     /**
@@ -139,11 +132,10 @@ const SyntaxHighlighter = (props: PropsWithForwardRef): JSX.Element => {
         return clean;
     };
 
-    const stylesheet: StyleSheet = Object.fromEntries(
-        Object.entries(syntaxStyle as StyleSheet).map(([className, style]) => [
-            className,
-            cleanStyle(style),
-        ])
+    const stylesheet = Object.fromEntries(
+        Object.entries(syntaxStyle as Record<string, React.CSSProperties>).map(
+            ([className, style]) => [className, cleanStyle(style as TextStyle)]
+        )
     );
 
     const renderLineNumbersBackground = () => (
@@ -183,30 +175,27 @@ const SyntaxHighlighter = (props: PropsWithForwardRef): JSX.Element => {
                     </Text>
                 );
 
-                const lineNumberElement =
-                    key !== '0' || index >= nodes.length - 2 ? undefined : (
-                        <Text
-                            key={`$line.${index}`}
-                            style={{
-                                position: 'absolute',
-                                top: 5,
-                                bottom: 0,
-                                paddingHorizontal: nodes.length - 2 < 100 ? 5 : 0,
-                                textAlign: 'center',
-                                color: lineNumbersColor,
-                                fontFamily,
-                                fontSize: lineNumbersFontSize,
-                                width: lineNumbersPadding ? lineNumbersPadding - 5 : 0,
-                            }}
-                        >
-                            {index + 1}
-                        </Text>
-                    );
-
                 acc.push(
-                    showLineNumbers && lineNumberElement ? (
+                    showLineNumbers ? (
                         <View key={`view.line.${index}`}>
-                            {lineNumberElement}
+                            {!(key !== '0' || index >= nodes.length - 2) && (
+                                <Text
+                                    key={`$line.${index}`}
+                                    style={{
+                                        position: 'absolute',
+                                        top: 5,
+                                        bottom: 0,
+                                        paddingHorizontal: nodes.length - 2 < 100 ? 5 : 0,
+                                        textAlign: 'center',
+                                        color: lineNumbersColor,
+                                        fontFamily,
+                                        fontSize: lineNumbersFontSize,
+                                        width: lineNumbersPadding ? lineNumbersPadding - 5 : 0,
+                                    }}
+                                >
+                                    {index + 1}
+                                </Text>
+                            )}
                             {textElement}
                         </View>
                     ) : (
@@ -217,7 +206,7 @@ const SyntaxHighlighter = (props: PropsWithForwardRef): JSX.Element => {
 
             if (node.value) {
                 // To prevent an empty line after each string
-                node.value = node.value.replace('\n', '');
+                node.value = (node.value as string).replace('\n', '');
                 // To render blank lines at an equal font height
                 node.value = node.value.length ? node.value : ' ';
                 acc.push(node.value);
@@ -226,7 +215,7 @@ const SyntaxHighlighter = (props: PropsWithForwardRef): JSX.Element => {
             return acc;
         }, []);
 
-    const nativeRenderer = ({ rows }: RendererParams) => {
+    const nativeRenderer = ({ rows }: rendererProps) => {
         return (
             <ScrollView
                 style={[
@@ -234,6 +223,7 @@ const SyntaxHighlighter = (props: PropsWithForwardRef): JSX.Element => {
                     {
                         width: '100%',
                         height: '100%',
+                        // @ts-ignore
                         backgroundColor: backgroundColor || stylesheet.hljs.background,
                         // Prevents YGValue error
                         padding: 0,
@@ -262,7 +252,7 @@ const SyntaxHighlighter = (props: PropsWithForwardRef): JSX.Element => {
             PreTag={View}
             renderer={nativeRenderer}
             testID={testID}
-            style={stylesheet}
+            style={stylesheet as Record<string, CSSProperties>}
         />
     );
 };

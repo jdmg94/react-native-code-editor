@@ -77,6 +77,12 @@ type Props = {
     /**
      * Initial value on render.
      */
+    value?: string;
+
+    /**
+     * @deprecated
+     * Initial value on render.
+     */
     initialValue?: string;
 
     /**
