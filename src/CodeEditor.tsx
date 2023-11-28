@@ -145,12 +145,12 @@ const CodeEditor = (props: PropsWithForwardRef): JSX.Element => {
         height = undefined,
         marginTop = undefined,
         marginBottom = undefined,
-        inputLineHeight = undefined,
         inputColor = 'rgba(0,0,0,0)',
         ...addedStyle
     } = style || {};
 
     const {
+        inputLineHeight = undefined,
         fontFamily = Platform.OS === 'ios' ? 'Menlo-Regular' : 'monospace',
         fontSize = 16,
         padding = 16,

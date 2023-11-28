@@ -52,6 +52,10 @@ export type SyntaxHighlighterStyleType = {
      * Use this property to align the syntax highlighter text with the text input.
      */
     highlighterLineHeight?: number;
+    /**
+     * Use this property to align the syntax highlighter text with the text input.
+     */
+    inputLineHeight?: number;
 
     /**
      * Use this property to help you align the syntax highlighter text with the text input.
