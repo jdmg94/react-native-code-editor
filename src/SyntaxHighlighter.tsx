@@ -156,8 +156,10 @@ const SyntaxHighlighter = (props: PropsWithForwardRef): JSX.Element => {
                             {
                                 fontFamily,
                                 fontSize,
+                                margin: 0,
                                 alignSelf: 'flex-start',
                                 lineHeight: highlighterLineHeight,
+                                height: highlighterLineHeight,
                             },
                         ]}
                     >
@@ -205,11 +207,13 @@ const SyntaxHighlighter = (props: PropsWithForwardRef): JSX.Element => {
                         // @ts-ignore
                         backgroundColor: backgroundColor || stylesheet.hljs.background,
                         // Prevents YGValue error
-                        padding: 0,
-                        paddingTop: padding,
-                        paddingBottom: padding,
                     },
                 ]}
+                contentContainerStyle={{
+                    padding: 0,
+                    paddingTop: 6.5,
+                    paddingBottom: padding,
+                }}
                 testID={`${testID}-scroll-view`}
                 ref={forwardedRef}
                 scrollEnabled={scrollEnabled}
