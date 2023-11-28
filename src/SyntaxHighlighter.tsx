@@ -142,19 +142,6 @@ const SyntaxHighlighter = (props: PropsWithForwardRef): JSX.Element => {
         )
     );
 
-    const renderLineNumbersBackground = () => (
-        <View
-            style={{
-                position: 'absolute',
-                top: -padding,
-                left: 0,
-                bottom: 0,
-                width: lineNumbersPadding ? lineNumbersPadding - 5 : 0,
-                backgroundColor: lineNumbersBackgroundColor,
-            }}
-        />
-    );
-
     const renderCode = (nodes: Node[], key = '0') =>
         nodes.map<React.ReactNode>((node, index) => {
             if (node.children) {
@@ -175,19 +162,25 @@ const SyntaxHighlighter = (props: PropsWithForwardRef): JSX.Element => {
                         ]}
                     >
                         {!(key !== '0' || index >= nodes.length - 2) && showLineNumbers && (
-                            <Text
-                                key={`$line.${index}`}
+                            <View
                                 style={{
-                                    paddingHorizontal: nodes.length - 2 < 100 ? 5 : 0,
-                                    textAlign: 'center',
-                                    color: lineNumbersColor,
-                                    fontFamily,
-                                    fontSize: lineNumbersFontSize,
+                                    backgroundColor: lineNumbersBackgroundColor,
                                     width: lineNumbersPadding ? lineNumbersPadding - 5 : 0,
                                 }}
                             >
-                                {index + 1}
-                            </Text>
+                                <Text
+                                    key={`$line.${index}`}
+                                    style={{
+                                        paddingHorizontal: nodes.length - 2 < 100 ? 5 : 0,
+                                        textAlign: 'center',
+                                        color: lineNumbersColor,
+                                        fontFamily,
+                                        fontSize: lineNumbersFontSize,
+                                    }}
+                                >
+                                    {index + 1}
+                                </Text>
+                            </View>
                         )}
                         {renderCode(node.children, `${key}.${index}`)}
                     </Text>
@@ -221,7 +214,6 @@ const SyntaxHighlighter = (props: PropsWithForwardRef): JSX.Element => {
                 ref={forwardedRef}
                 scrollEnabled={scrollEnabled}
             >
-                {showLineNumbers && renderLineNumbersBackground()}
                 {renderCode(rows)}
             </ScrollView>
         );
