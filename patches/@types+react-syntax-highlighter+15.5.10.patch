@@ -1,0 +1,20 @@
+diff --git a/node_modules/@types/react-syntax-highlighter/index.d.ts b/node_modules/@types/react-syntax-highlighter/index.d.ts
+index b75a0bf..215e165 100644
+--- a/node_modules/@types/react-syntax-highlighter/index.d.ts
++++ b/node_modules/@types/react-syntax-highlighter/index.d.ts
+@@ -1,13 +1,13 @@
+ type lineNumberStyleFunction = (lineNumber: number) => React.CSSProperties;
+ type lineTagPropsFunction = (lineNumber: number) => React.HTMLProps<HTMLElement>;
+-interface rendererNode {
++export interface rendererNode {
+     type: "element" | "text";
+     value?: string | number | undefined;
+     tagName?: keyof JSX.IntrinsicElements | React.ComponentType<any> | undefined;
+     properties?: { className: any[]; [key: string]: any };
+     children?: rendererNode[];
+ }
+-interface rendererProps {
++export interface rendererProps {
+     rows: rendererNode[];
+     stylesheet: { [key: string]: React.CSSProperties };
+     useInlineStyles: boolean;
