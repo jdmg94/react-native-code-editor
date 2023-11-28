@@ -159,14 +159,25 @@ const SyntaxHighlighter = (props: PropsWithForwardRef): JSX.Element => {
         nodes.map<React.ReactNode>((node, index) => {
             if (node.children) {
                 return (
-                    <View key={`view.line.${index}`}>
+                    <Text
+                        key={`view.line.${index}`}
+                        style={[
+                            {
+                                color: highlighterColor || stylesheet.hljs.color,
+                            },
+                            ...(node.properties?.className || []).map((c) => stylesheet[c]),
+                            {
+                                fontFamily,
+                                fontSize,
+                                alignSelf: 'flex-start',
+                                lineHeight: highlighterLineHeight,
+                            },
+                        ]}
+                    >
                         {!(key !== '0' || index >= nodes.length - 2) && showLineNumbers && (
                             <Text
                                 key={`$line.${index}`}
                                 style={{
-                                    position: 'absolute',
-                                    top: 5,
-                                    bottom: 0,
                                     paddingHorizontal: nodes.length - 2 < 100 ? 5 : 0,
                                     textAlign: 'center',
                                     color: lineNumbersColor,
@@ -179,37 +190,15 @@ const SyntaxHighlighter = (props: PropsWithForwardRef): JSX.Element => {
                             </Text>
                         )}
                         {renderCode(node.children, `${key}.${index}`)}
-                    </View>
-                );
-            }
-
-            if (node.value) {
-                // To prevent an empty line after each string
-                node.value = (node.value as string).replace('\n', '');
-
-                return (
-                    <Text
-                        numberOfLines={1}
-                        key={`${key}.${index}`}
-                        style={[
-                            {
-                                color: highlighterColor || stylesheet.hljs.color,
-                            },
-                            ...(node.properties?.className || []).map((c) => stylesheet[c]),
-                            {
-                                lineHeight: highlighterLineHeight,
-                                fontFamily,
-                                fontSize,
-                                paddingLeft: lineNumbersPadding ?? padding,
-                            },
-                        ]}
-                    >
-                        {node.value || ''}
                     </Text>
                 );
             }
 
-            return <></>;
+            return (
+                <Text numberOfLines={1} key={`${key}.${index}`}>
+                    {(node.value as string).replace('\n', '') || ''}
+                </Text>
+            );
         });
 
     const nativeRenderer = ({ rows }: rendererProps) => {
@@ -225,7 +214,6 @@ const SyntaxHighlighter = (props: PropsWithForwardRef): JSX.Element => {
                         // Prevents YGValue error
                         padding: 0,
                         paddingTop: padding,
-                        paddingRight: padding,
                         paddingBottom: padding,
                     },
                 ]}
