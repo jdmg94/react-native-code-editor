@@ -155,10 +155,39 @@ const SyntaxHighlighter = (props: PropsWithForwardRef): JSX.Element => {
         />
     );
 
-    const renderNode = (nodes: Node[], key = '0') =>
-        nodes.reduce<React.ReactNode[]>((acc, node, index) => {
+    const renderCode = (nodes: Node[], key = '0') =>
+        nodes.map<React.ReactNode>((node, index) => {
             if (node.children) {
-                const textElement = (
+                return (
+                    <View key={`view.line.${index}`}>
+                        {!(key !== '0' || index >= nodes.length - 2) && showLineNumbers && (
+                            <Text
+                                key={`$line.${index}`}
+                                style={{
+                                    position: 'absolute',
+                                    top: 5,
+                                    bottom: 0,
+                                    paddingHorizontal: nodes.length - 2 < 100 ? 5 : 0,
+                                    textAlign: 'center',
+                                    color: lineNumbersColor,
+                                    fontFamily,
+                                    fontSize: lineNumbersFontSize,
+                                    width: lineNumbersPadding ? lineNumbersPadding - 5 : 0,
+                                }}
+                            >
+                                {index + 1}
+                            </Text>
+                        )}
+                        {renderCode(node.children, `${key}.${index}`)}
+                    </View>
+                );
+            }
+
+            if (node.value) {
+                // To prevent an empty line after each string
+                node.value = (node.value as string).replace('\n', '');
+
+                return (
                     <Text
                         numberOfLines={1}
                         key={`${key}.${index}`}
@@ -175,49 +204,13 @@ const SyntaxHighlighter = (props: PropsWithForwardRef): JSX.Element => {
                             },
                         ]}
                     >
-                        {renderNode(node.children, `${key}.${index}`)}
+                        {node.value || ''}
                     </Text>
                 );
-
-                acc.push(
-                    showLineNumbers ? (
-                        <View key={`view.line.${index}`}>
-                            {!(key !== '0' || index >= nodes.length - 2) && (
-                                <Text
-                                    key={`$line.${index}`}
-                                    style={{
-                                        position: 'absolute',
-                                        top: 5,
-                                        bottom: 0,
-                                        paddingHorizontal: nodes.length - 2 < 100 ? 5 : 0,
-                                        textAlign: 'center',
-                                        color: lineNumbersColor,
-                                        fontFamily,
-                                        fontSize: lineNumbersFontSize,
-                                        width: lineNumbersPadding ? lineNumbersPadding - 5 : 0,
-                                    }}
-                                >
-                                    {index + 1}
-                                </Text>
-                            )}
-                            {textElement}
-                        </View>
-                    ) : (
-                        textElement
-                    )
-                );
             }
 
-            if (node.value) {
-                // To prevent an empty line after each string
-                node.value = (node.value as string).replace('\n', '');
-                // To render blank lines at an equal font height
-                node.value = node.value.length ? node.value : ' ';
-                acc.push(node.value);
-            }
-
-            return acc;
-        }, []);
+            return <></>;
+        });
 
     const nativeRenderer = ({ rows }: rendererProps) => {
         return (
@@ -241,7 +234,7 @@ const SyntaxHighlighter = (props: PropsWithForwardRef): JSX.Element => {
                 scrollEnabled={scrollEnabled}
             >
                 {showLineNumbers && renderLineNumbersBackground()}
-                {renderNode(rows)}
+                {renderCode(rows)}
             </ScrollView>
         );
     };
