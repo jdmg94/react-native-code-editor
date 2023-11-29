@@ -1,20 +1,16 @@
 import React, { CSSProperties } from 'react';
-import { View, ScrollView, Text, Platform, ColorValue, TextStyle } from 'react-native';
-import Highlighter, { SyntaxHighlighterProps as HighlighterProps } from 'react-syntax-highlighter';
+import { View, ScrollView, Text, Platform, ColorValue } from 'react-native';
+import Highlighter, {
+    rendererNode as Node,
+    SyntaxHighlighterProps as HighlighterProps,
+} from 'react-syntax-highlighter';
 // @ts-ignore
 import * as HLJSSyntaxStyles from 'react-syntax-highlighter/dist/esm/styles/hljs';
 
-export interface Node {
-    type: 'element' | 'text';
-    value?: string | number | undefined;
-    tagName?: keyof JSX.IntrinsicElements | React.ComponentType<any> | undefined;
-    properties?: { className: any[]; [key: string]: any };
-    children?: Node[];
-}
 export interface rendererProps {
     rows: Node[];
-    stylesheet: { [key: string]: React.CSSProperties };
     useInlineStyles: boolean;
+    stylesheet: { [key: string]: React.CSSProperties };
 }
 
 export type SyntaxHighlighterStyleType = {
@@ -98,6 +94,96 @@ type PropsWithForwardRef = SyntaxHighlighterProps & {
     forwardedRef: React.Ref<ScrollView>;
 };
 
+const styleCache = new Map();
+
+const topLevelPropertiesToRemove = [
+    'color',
+    'textShadow',
+    'textAlign',
+    'whiteSpace',
+    'wordSpacing',
+    'wordBreak',
+    'wordWrap',
+    'lineHeight',
+    'MozTabSize',
+    'OTabSize',
+    'tabSize',
+    'WebkitHyphens',
+    'MozHyphens',
+    'msHyphens',
+    'hyphens',
+    'fontFamily',
+];
+
+type generateNewStylesheetProps = {
+    stylesheet: Record<string, CSSProperties>;
+    highlighter: 'prism' | 'highlightjs';
+};
+
+function generateNewStylesheet({ stylesheet, highlighter }: generateNewStylesheetProps) {
+    if (styleCache.has(stylesheet)) {
+        return styleCache.get(stylesheet);
+    }
+    stylesheet = Array.isArray(stylesheet) ? stylesheet[0] : stylesheet;
+    const transformedStyle: Record<string, CSSProperties> = Object.entries(stylesheet).reduce(
+        (newStylesheet, [className, style]) => {
+            // @ts-ignore
+            newStylesheet[className] = Object.entries(style).reduce(
+                (newStyle: CSSProperties, [key, value]) => {
+                    if (key === 'overflowX' || key === 'overflow') {
+                        newStyle.overflow = value === 'auto' ? 'scroll' : value;
+                    } else if (value.includes('em')) {
+                        const [num] = value.split('em');
+                        // @ts-ignore
+                        newStyle[key] = Number(num) * 16;
+                    } else if (key === 'background') {
+                        newStyle.backgroundColor = value;
+                    } else if (key === 'display') {
+                        return newStyle;
+                    } else {
+                        // @ts-ignore
+                        newStyle[key] = value;
+                    }
+                    return newStyle;
+                },
+                {}
+            );
+            return newStylesheet;
+        },
+        {}
+    );
+    const topLevel: CSSProperties =
+        highlighter === 'prism'
+            ? transformedStyle['pre[class*="language-"]']
+            : transformedStyle.hljs;
+    const defaultColor = (topLevel && topLevel.color) || '#000';
+    topLevelPropertiesToRemove.forEach((property) => {
+        // @ts-ignore
+        if (topLevel[property]) {
+            // @ts-ignore
+            delete topLevel[property];
+        }
+    });
+    if (topLevel.backgroundColor === 'none') {
+        delete topLevel.backgroundColor;
+    }
+    const codeLevel = transformedStyle['code[class*="language-"]'];
+    if (highlighter === 'prism' && !!codeLevel) {
+        topLevelPropertiesToRemove.forEach((property) => {
+            // @ts-ignore
+            if (codeLevel[property]) {
+                // @ts-ignore
+                delete codeLevel[property];
+            }
+        });
+        if (codeLevel.backgroundColor === 'none') {
+            delete codeLevel.backgroundColor;
+        }
+    }
+    styleCache.set(stylesheet, { transformedStyle, defaultColor });
+    return { transformedStyle, defaultColor };
+}
+
 const SyntaxHighlighter = (props: PropsWithForwardRef): JSX.Element => {
     const {
         syntaxStyle = SyntaxHighlighterSyntaxStyles.atomOneDark,
@@ -128,19 +214,10 @@ const SyntaxHighlighter = (props: PropsWithForwardRef): JSX.Element => {
     // Prevents the last line from clipping when scrolling
     highlighterProps.children += '\n\n';
 
-    const cleanStyle = (style: TextStyle) => {
-        const clean: TextStyle = {
-            ...style,
-            display: undefined,
-        };
-        return clean;
-    };
-
-    const stylesheet = Object.fromEntries(
-        Object.entries(syntaxStyle as Record<string, React.CSSProperties>).map(
-            ([className, style]) => [className, cleanStyle(style as TextStyle)]
-        )
-    );
+    const { transformedStyle, defaultColor } = generateNewStylesheet({
+        stylesheet: syntaxStyle,
+        highlighter: 'highlightjs',
+    });
 
     const renderCode = (nodes: Node[], key = '0') =>
         nodes.map<React.ReactNode>((node, index) => {
@@ -150,9 +227,9 @@ const SyntaxHighlighter = (props: PropsWithForwardRef): JSX.Element => {
                         key={`view.line.${index}`}
                         style={[
                             {
-                                color: highlighterColor || stylesheet.hljs.color,
+                                color: highlighterColor || defaultColor,
                             },
-                            ...(node.properties?.className || []).map((c) => stylesheet[c]),
+                            ...(node.properties?.className || []).map((c) => transformedStyle[c]),
                             {
                                 fontFamily,
                                 fontSize,
@@ -196,32 +273,28 @@ const SyntaxHighlighter = (props: PropsWithForwardRef): JSX.Element => {
             );
         });
 
-    const nativeRenderer = ({ rows }: rendererProps) => {
-        return (
-            <ScrollView
-                style={[
-                    stylesheet.hljs,
-                    {
-                        width: '100%',
-                        height: '100%',
-                        // @ts-ignore
-                        backgroundColor: backgroundColor || stylesheet.hljs.background,
-                        // Prevents YGValue error
-                    },
-                ]}
-                contentContainerStyle={{
+    const nativeRenderer = ({ rows }: rendererProps) => (
+        <ScrollView
+            style={{
+                width: '100%',
+                height: '100%',
+                backgroundColor: backgroundColor || transformedStyle.hljs.background,
+            }}
+            contentContainerStyle={[
+                transformedStyle.hljs,
+                {
                     padding: 0,
                     paddingTop: 6.5,
                     paddingBottom: padding,
-                }}
-                testID={`${testID}-scroll-view`}
-                ref={forwardedRef}
-                scrollEnabled={scrollEnabled}
-            >
-                {renderCode(rows)}
-            </ScrollView>
-        );
-    };
+                },
+            ]}
+            testID={`${testID}-scroll-view`}
+            ref={forwardedRef}
+            scrollEnabled={scrollEnabled}
+        >
+            {renderCode(rows)}
+        </ScrollView>
+    );
 
     return (
         <Highlighter
@@ -229,11 +302,11 @@ const SyntaxHighlighter = (props: PropsWithForwardRef): JSX.Element => {
             customStyle={{
                 padding: 0,
             }}
-            CodeTag={View}
             PreTag={View}
-            renderer={nativeRenderer}
+            CodeTag={View}
             testID={testID}
-            style={stylesheet as Record<string, CSSProperties>}
+            renderer={nativeRenderer}
+            style={transformedStyle}
         />
     );
 };

@@ -145,7 +145,7 @@ const CodeEditor = (props: PropsWithForwardRef): JSX.Element => {
         height = undefined,
         marginTop = undefined,
         marginBottom = undefined,
-        inputColor = 'rgba(0,0,0,0)',
+        inputColor = '#FFF2',
         ...addedStyle
     } = style || {};
 
