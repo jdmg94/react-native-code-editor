@@ -145,7 +145,7 @@ const CodeEditor = (props: PropsWithForwardRef): JSX.Element => {
         height = undefined,
         marginTop = undefined,
         marginBottom = undefined,
-        inputColor = '#FFF2',
+        inputColor = '#FFF1',
         ...addedStyle
     } = style || {};
 
@@ -277,6 +277,7 @@ const CodeEditor = (props: PropsWithForwardRef): JSX.Element => {
                         padding,
                         paddingTop: padding,
                         paddingLeft: lineNumbersPadding,
+                        width: '200%',
                     },
                 ]}
                 value={value}

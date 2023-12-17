@@ -156,7 +156,7 @@ function generateNewStylesheet({ stylesheet, highlighter }: generateNewStyleshee
         highlighter === 'prism'
             ? transformedStyle['pre[class*="language-"]']
             : transformedStyle.hljs;
-    const defaultColor = (topLevel && topLevel.color) || '#000';
+    const defaultColor = topLevel?.color || '#000';
     topLevelPropertiesToRemove.forEach((property) => {
         // @ts-ignore
         if (topLevel[property]) {
@@ -195,6 +195,14 @@ const SyntaxHighlighter = (props: PropsWithForwardRef): JSX.Element => {
         ...highlighterProps
     } = props;
 
+    // Prevents the last line from clipping when scrolling
+    highlighterProps.children += '\n\n';
+
+    const { transformedStyle, defaultColor } = generateNewStylesheet({
+        stylesheet: syntaxStyle,
+        highlighter: 'highlightjs',
+    });
+
     // Default values
     const {
         fontFamily = Platform.OS === 'ios' ? 'Menlo-Regular' : 'monospace',
@@ -204,97 +212,222 @@ const SyntaxHighlighter = (props: PropsWithForwardRef): JSX.Element => {
         lineNumbersColor = 'rgba(127, 127, 127, 0.9)',
         lineNumbersBackgroundColor = undefined,
         highlighterLineHeight = undefined,
-        highlighterColor = undefined,
+        highlighterColor = defaultColor,
     } = addedStyle || {};
 
     // Only when line numbers are showing
     const lineNumbersPadding = showLineNumbers ? 1.75 * fontSize : undefined;
     const lineNumbersFontSize = 0.7 * fontSize;
 
-    // Prevents the last line from clipping when scrolling
-    highlighterProps.children += '\n\n';
+    // const renderCode = (nodes: Node[], key = '0') =>
+    //     nodes.map<React.ReactNode>((node, index) => {
+    //         if (node.children) {
+    //             if (key === '0') {
+    //                 return (
+    //                     <View
+    //                         key={`$line.${index}`}
+    //                         style={{
+    //                             flex: 1,
+    //                             margin: 0,
+    //                             padding: 0,
+    //                             flexDirection: 'row',
+    //                             alignItems: 'center',
+    //                         }}
+    //                     >
+    //                         {showLineNumbers && index < nodes.length - 2 && (
+    //                             <View
+    //                                 style={{
+    //                                     marginRight: 5,
+    //                                     backgroundColor: lineNumbersBackgroundColor,
+    //                                     width: lineNumbersPadding ? lineNumbersPadding - 5 : 0,
+    //                                 }}
+    //                             >
+    //                                 <Text
+    //                                     style={{
+    //                                         paddingHorizontal: nodes.length - 2 < 100 ? 5 : 0,
+    //                                         textAlign: 'center',
+    //                                         color: lineNumbersColor,
+    //                                         fontFamily,
+    //                                         fontSize: lineNumbersFontSize,
+    //                                     }}
+    //                                 >
+    //                                     {index + 1}
+    //                                 </Text>
+    //                             </View>
+    //                         )}
+    //                         {renderCode(node.children, `${key}.${index}`)}
+    //                     </View>
+    //                 );
+    //             }
 
-    const { transformedStyle, defaultColor } = generateNewStylesheet({
-        stylesheet: syntaxStyle,
-        highlighter: 'highlightjs',
-    });
+    //             return (
+    //                 <Text
+    //                     key={`view.line.${index}`}
+    //                     style={[
+    //                         {
+    //                             color: highlighterColor || defaultColor,
+    //                         },
+    //                         ...(node.properties?.className || []).map((c) => transformedStyle[c]),
+    //                         {
+    //                             fontFamily,
+    //                             fontSize,
+    //                             margin: 0,
+    //                             alignSelf: 'flex-start',
+    //                             lineHeight: highlighterLineHeight,
+    //                             height: highlighterLineHeight,
+    //                         },
+    //                     ]}
+    //                 >
+    //                     {renderCode(node.children, `${key}.${index}`)}
+    //                 </Text>
+    //             );
+    //         }
 
-    const renderCode = (nodes: Node[], key = '0') =>
+    //         return (
+    //             <Text
+    //                 numberOfLines={1}
+    //                 key={`${key}.${index}`}
+    //                 style={[
+    //                     ...(node.properties?.className || []).map((c) => transformedStyle[c]),
+    //                     {
+    //                         fontFamily,
+    //                         fontSize,
+    //                         margin: 0,
+    //                         alignSelf: 'flex-start',
+    //                         lineHeight: highlighterLineHeight,
+    //                         height: highlighterLineHeight,
+    //                     },
+    //                 ]}
+    //             >
+    //                 {(node.value as string).replace('\n', '') || ''}
+    //             </Text>
+    //         );
+    //     });
+
+    // const nativeRenderer = ({ rows }: rendererProps) => (
+    //     <ScrollView
+    //         style={{
+    //             width: '100%',
+    //             height: '100%',
+    //             backgroundColor: backgroundColor || transformedStyle.hljs.background,
+    //         }}
+    //         contentContainerStyle={[
+    //             transformedStyle.hljs,
+    //             {
+    //                 padding: 0,
+    //                 width: '100%',
+    //                 height: '100%',
+    //                 paddingTop: padding,
+    //                 paddingBottom: padding,
+    //             },
+    //         ]}
+    //         testID={`${testID}-scroll-view`}
+    //         ref={forwardedRef}
+    //         scrollEnabled={scrollEnabled}
+    //     >
+    //         {renderCode(rows)}
+    //     </ScrollView>
+    // );
+
+    const renderLineNumbersBackground = () => (
+        <View
+            style={{
+                position: 'absolute',
+                top: -padding,
+                left: 0,
+                bottom: 0,
+                width: lineNumbersPadding ? lineNumbersPadding - 5 : 0,
+                backgroundColor: lineNumbersBackgroundColor,
+            }}
+        />
+    );
+
+    const renderNode = (nodes: Node[], key = '0') =>
         nodes.map<React.ReactNode>((node, index) => {
             if (node.children) {
-                return (
+                const isFirstLineChunk = !(key !== '0' || index >= nodes.length - 2);
+                const textElement = (
                     <Text
-                        key={`view.line.${index}`}
+                        numberOfLines={1}
+                        key={`${key}.${index}`}
                         style={[
                             {
-                                color: highlighterColor || defaultColor,
+                                color: highlighterColor || transformedStyle.hljs.color,
                             },
                             ...(node.properties?.className || []).map((c) => transformedStyle[c]),
                             {
+                                lineHeight: highlighterLineHeight,
                                 fontFamily,
                                 fontSize,
-                                margin: 0,
-                                alignSelf: 'flex-start',
-                                lineHeight: highlighterLineHeight,
-                                height: highlighterLineHeight,
+                                paddingLeft: lineNumbersPadding ?? padding,
                             },
                         ]}
                     >
-                        {!(key !== '0' || index >= nodes.length - 2) && showLineNumbers && (
-                            <View
-                                style={{
-                                    backgroundColor: lineNumbersBackgroundColor,
-                                    width: lineNumbersPadding ? lineNumbersPadding - 5 : 0,
-                                }}
-                            >
-                                <Text
-                                    key={`$line.${index}`}
-                                    style={{
-                                        paddingHorizontal: nodes.length - 2 < 100 ? 5 : 0,
-                                        textAlign: 'center',
-                                        color: lineNumbersColor,
-                                        fontFamily,
-                                        fontSize: lineNumbersFontSize,
-                                    }}
-                                >
-                                    {index + 1}
-                                </Text>
-                            </View>
-                        )}
-                        {renderCode(node.children, `${key}.${index}`)}
+                        {renderNode(node.children, `${key}.${index}`)}
                     </Text>
+                );
+
+                return showLineNumbers && isFirstLineChunk ? (
+                    <View key={`view.line.${index}`}>
+                        <Text
+                            key={`$line.${index}`}
+                            style={{
+                                position: 'absolute',
+                                top: 5,
+                                bottom: 0,
+                                paddingHorizontal: nodes.length - 2 < 100 ? 5 : 0,
+                                textAlign: 'center',
+                                color: lineNumbersColor,
+                                fontFamily,
+                                fontSize: lineNumbersFontSize,
+                                width: lineNumbersPadding ? lineNumbersPadding - 5 : 0,
+                            }}
+                        >
+                            {index + 1}
+                        </Text>
+                        {textElement}
+                    </View>
+                ) : (
+                    textElement
                 );
             }
 
-            return (
-                <Text numberOfLines={1} key={`${key}.${index}`}>
-                    {(node.value as string).replace('\n', '') || ''}
-                </Text>
-            );
+            if (node.value) {
+                // To prevent an empty line after each string
+                node.value = node.value.replace('\n', '');
+                // To render blank lines at an equal font height
+                node.value = node.value.length ? node.value : ' ';
+                return <Text key={`${key}.${index}`}>{node.value}</Text>;
+            }
+
+            return <Text key={`${key}.${index}`} />;
         });
 
-    const nativeRenderer = ({ rows }: rendererProps) => (
-        <ScrollView
-            style={{
-                width: '100%',
-                height: '100%',
-                backgroundColor: backgroundColor || transformedStyle.hljs.background,
-            }}
-            contentContainerStyle={[
-                transformedStyle.hljs,
-                {
-                    padding: 0,
-                    paddingTop: 6.5,
-                    paddingBottom: padding,
-                },
-            ]}
-            testID={`${testID}-scroll-view`}
-            ref={forwardedRef}
-            scrollEnabled={scrollEnabled}
-        >
-            {renderCode(rows)}
-        </ScrollView>
-    );
+    const nativeRenderer = ({ rows }: RendererParams) => {
+        return (
+            <ScrollView
+                style={[
+                    transformedStyle.hljs,
+                    {
+                        width: '100%',
+                        height: '100%',
+                        backgroundColor: backgroundColor || transformedStyle.hljs.background,
+                        // Prevents YGValue error
+                        padding: 0,
+                        paddingTop: padding,
+                        paddingRight: padding,
+                        paddingBottom: padding,
+                    },
+                ]}
+                testID={`${testID}-scroll-view`}
+                ref={forwardedRef}
+                scrollEnabled={scrollEnabled}
+            >
+                {showLineNumbers && renderLineNumbersBackground()}
+                {renderNode(rows)}
+            </ScrollView>
+        );
+    };
 
     return (
         <Highlighter
