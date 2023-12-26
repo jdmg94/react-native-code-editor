@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, ScrollView, Text, Platform, ColorValue, TextStyle } from 'react-native';
 import Highlighter, { SyntaxHighlighterProps as HighlighterProps } from 'react-syntax-highlighter';
+// @ts-ignore
 import * as HLJSSyntaxStyles from 'react-syntax-highlighter/dist/esm/styles/hljs';
 
 type Node = {
@@ -160,8 +161,9 @@ const SyntaxHighlighter = (props: PropsWithForwardRef): JSX.Element => {
     );
 
     const renderNode = (nodes: Node[], key = '0') =>
-        nodes.reduce<React.ReactNode[]>((acc, node, index) => {
+        nodes.map<React.ReactNode>((node, index) => {
             if (node.children) {
+                const isFirstLineChunk = !(key !== '0' || index >= nodes.length - 2);
                 const textElement = (
                     <Text
                         numberOfLines={1}
@@ -183,8 +185,8 @@ const SyntaxHighlighter = (props: PropsWithForwardRef): JSX.Element => {
                     </Text>
                 );
 
-                const lineNumberElement =
-                    key !== '0' || index >= nodes.length - 2 ? undefined : (
+                return showLineNumbers && isFirstLineChunk ? (
+                    <View key={`view.line.${index}`}>
                         <Text
                             key={`$line.${index}`}
                             style={{
@@ -201,17 +203,10 @@ const SyntaxHighlighter = (props: PropsWithForwardRef): JSX.Element => {
                         >
                             {index + 1}
                         </Text>
-                    );
-
-                acc.push(
-                    showLineNumbers && lineNumberElement ? (
-                        <View key={`view.line.${index}`}>
-                            {lineNumberElement}
-                            {textElement}
-                        </View>
-                    ) : (
-                        textElement
-                    )
+                        {textElement}
+                    </View>
+                ) : (
+                    textElement
                 );
             }
 
@@ -220,11 +215,11 @@ const SyntaxHighlighter = (props: PropsWithForwardRef): JSX.Element => {
                 node.value = node.value.replace('\n', '');
                 // To render blank lines at an equal font height
                 node.value = node.value.length ? node.value : ' ';
-                acc.push(node.value);
+                return <Text key={`${key}.${index}`}>{node.value}</Text>;
             }
 
-            return acc;
-        }, []);
+            return <Text key={`${key}.${index}`} />;
+        });
 
     const nativeRenderer = ({ rows }: RendererParams) => {
         return (

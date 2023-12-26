@@ -80,6 +80,11 @@ type Props = {
     initialValue?: string;
 
     /**
+     * value to render.
+     */
+    value?: string;
+
+    /**
      * On value change.
      */
     onChange?: (newValue: string) => void;
